@@ -18,22 +18,24 @@ app.engine('handlebars', engine());
 app.set('view engine', 'handlebars');
 app.set('views', './views');
 
-// Middlewares básicos
+// Middlewares básicos (Precisam vir ANTES das rotas)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Configuração de Sessão (necessário para o Login mais tarde)
+// Configuração de Sessão (necessário para o Login)
 app.use(session({
     secret: 'chave-secreta-do-pedro',
     resave: false,
     saveUninitialized: false
 }));
 
-// Importa e usa as rotas de autenticação
+// Importa e usa as rotas 
 const authRoutes = require('./routes/authRoutes');
-app.use('/auth', authRoutes);
+const categoriaRoutes = require('./routes/categoriaRoutes'); 
 
+app.use('/auth', authRoutes);
+app.use('/categorias', categoriaRoutes); 
 
 // Função para iniciar o sistema
 const startApp = async () => {
@@ -45,7 +47,7 @@ const startApp = async () => {
         await sequelize.sync({ force: false });
         console.log('🗄️  SQLite (Sequelize) sincronizado e tabelas prontas!');
 
-        // ---  CRIAÇÃO DO ADMIN PADRÃO ---
+        // --- CRIAÇÃO DO ADMIN PADRÃO ---
         const adminExiste = await Usuario.findOne({ where: { email: 'admin@utfpr.edu.br' } });
         
         if (!adminExiste) {
@@ -56,17 +58,17 @@ const startApp = async () => {
                 senha: senhaHash,
                 isAdmin: true // Garante permissão total de administrador
             });
-            console.log(' Usuário Admin padrão criado com sucesso! (admin@utfpr.edu.br / admin123)');
+            console.log('👑 Usuário Admin padrão criado com sucesso! (admin@utfpr.edu.br / admin123)');
         }
         // ----------------------------------------
 
         // 3. Iniciar o servidor
         const PORT = 3000;
         app.listen(PORT, () => {
-            console.log(` Servidor a bombar em http://localhost:${PORT}`);
+            console.log(`🚀 Servidor a bombar em http://localhost:${PORT}`);
         });
     } catch (error) {
-        console.error(' Falha ao iniciar a aplicação:', error);
+        console.error('❌ Falha ao iniciar a aplicação:', error);
     }
 };
 
