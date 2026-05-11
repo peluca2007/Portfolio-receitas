@@ -1,23 +1,22 @@
 const mongoose = require('mongoose');
 
-const commentSchema = new mongoose.Schema({
-    receitaId: {
-        type: Number, // Guarda o ID da receita que vem lá do SQLite
+const CommentSchema = new mongoose.Schema({
+    receita_id: {
+        type: Number,
         required: true
     },
     autor: {
         type: String,
-        required: true,
-        default: 'Anônimo'
+        required: true
     },
     texto: {
         type: String,
         required: true
     },
-    dataCriacao: {
+    data: {
         type: Date,
         default: Date.now
     }
 });
 
-module.exports = mongoose.model('Comment', commentSchema);
+module.exports = mongoose.model('Comment', CommentSchema);

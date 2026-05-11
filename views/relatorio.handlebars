@@ -1,0 +1,21 @@
+<h2 class="titulo-secao">📈 Relatório de Domínio Culinário</h2>
+<p style="margin-bottom: 2rem; color: #aaa;">Proporção baseada em um total de <strong>{{totalAlunos}}</strong> alunos cadastrados.</p>
+
+<div class="grid-estranho" style="grid-template-columns: 1fr;">
+    {{#each habilidades}}
+    <div class="card-receita" style="margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <strong style="color: #2ecc71;">{{this.nome}}</strong>
+            <span style="color: #8e44ad;">{{this.porcentagem}}% ({{this.qtd}} alunos)</span>
+        </div>
+        <div style="background: #222; border-radius: 10px; height: 12px; width: 100%; border: 1px solid #333;">
+            <div style="background: linear-gradient(90deg, #8e44ad, #2ecc71); 
+                        width: {{this.porcentagem}}%; 
+                        height: 100%; 
+                        border-radius: 10px;
+                        box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);">
+            </div>
+        </div>
+    </div>
+    {{/each}}
+</div>

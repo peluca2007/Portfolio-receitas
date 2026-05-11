@@ -1,0 +1,51 @@
+<h2 class="titulo-secao">☣️ Experimentos Catalogados</h2>
+
+<div class="filtros">
+    <span style="color: #777; font-size: 0.85rem; display: block; margin-bottom: 0.5rem;">[ FILTRAR PROTOCOLOS ]</span>
+    <a href="/" class="tag-filtro" style="background: #8e44ad; color: #000;">TODAS</a>
+    {{#each categorias}}
+    <a href="/categoria/{{this.id}}" class="tag-filtro">{{this.nome}}</a>
+    {{/each}}
+</div>
+
+{{#if receitas}}
+<div class="grid-estranho">
+    {{#each receitas}}
+    <div class="card-receita">
+        <div>
+            <h3>{{this.nome}}</h3>
+            <p class="desc">{{this.descricao}}</p>
+
+            <div>
+                {{#each this.Categorias}}
+                <span class="tag-cat">{{this.nome}}</span>
+                {{/each}}
+            </div>
+
+            <span class="autor">
+                <strong>Cozinheiro(s):</strong>
+                {{#each this.responsaveis}} 🔪 {{this.nome}} {{/each}}
+            </span>
+
+            <a href="{{this.link_externo}}" target="_blank" class="btn-link">[ ACESSAR RECEITA 🔗 ]</a>
+        </div>
+
+        <div class="area-mongo">
+            <h4>💬 Cobaias Disseram ({{this.comentarios.length}})</h4>
+            {{#each this.comentarios}}
+            <div class="comentario-item">
+                <strong>{{this.autor}}</strong> <span style="color: #666;">({{this.data}})</span>
+                <p style="margin-top: 0.2rem; color: #aaa;">"{{this.texto}}"</p>
+            </div>
+            {{/each}}
+            {{#unless this.comentarios}}
+            <p style="font-size: 0.75rem; color: #555; font-style: italic;">Nenhum relato. Ninguém sobreviveu para
+                comentar.</p>
+            {{/unless}}
+        </div>
+    </div>
+    {{/each}}
+</div>
+{{else}}
+<p style="color: #e74c3c;">Nenhum experimento bizarro cadastrado ainda no banco de dados.</p>
+{{/if}}

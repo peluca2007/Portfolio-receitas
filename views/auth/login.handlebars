@@ -1,0 +1,25 @@
+<div class="card-receita" style="max-width: 400px; margin: 4rem auto; border-color: #e74c3c;">
+    <h2 style="color: #e74c3c; text-align: center; margin-bottom: 2rem;">[ AUTENTICAÇÃO NECESSÁRIA ]</h2>
+    
+    <form action="/auth/login" method="POST">
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; color: #2ecc71; margin-bottom: 0.5rem;">ID DO USUÁRIO (EMAIL):</label>
+            <input type="email" name="email" required 
+                style="width: 100%; background: #000; border: 1px solid #333; color: #2ecc71; padding: 0.8rem; font-family: 'Courier New';">
+        </div>
+
+        <div style="margin-bottom: 2rem;">
+            <label style="display: block; color: #2ecc71; margin-bottom: 0.5rem;">CHAVE DE ACESSO (SENHA):</label>
+            <input type="password" name="senha" required 
+                style="width: 100%; background: #000; border: 1px solid #333; color: #2ecc71; padding: 0.8rem; font-family: 'Courier New';">
+        </div>
+
+        <button type="submit" class="btn-link" style="width: 100%; cursor: pointer; border-color: #e74c3c; color: #e74c3c;">
+            EXECUTAR LOGIN.EXE
+        </button>
+    </form>
+    
+    {{#if erro}}
+        <p style="color: #e74c3c; margin-top: 1rem; text-align: center; font-size: 0.8rem;">⚠️ [ERRO]: CREDENCIAIS INVÁLIDAS</p>
+    {{/if}}
+</div>

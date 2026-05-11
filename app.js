@@ -30,12 +30,29 @@ app.use(session({
     saveUninitialized: false
 }));
 
-// Importa e usa as rotas 
+// Importa os Controllers e Rotas
+const PublicController = require('./controllers/PublicController'); 
 const authRoutes = require('./routes/authRoutes');
 const categoriaRoutes = require('./routes/categoriaRoutes'); 
+const habilidadeRoutes = require('./routes/habilidadeRoutes'); 
+const alunoRoutes = require('./routes/alunoRoutes'); 
+const receitaRoutes = require('./routes/receitaRoutes'); 
+const alunoHabilidadeRoutes = require('./routes/alunoHabilidadeRoutes'); 
+const commentRoutes = require('./routes/commentRoutes'); 
 
+// --- ROTA PÚBLICA PRINCIPAL 
+app.get('/', PublicController.home); 
+app.get('/relatorio', PublicController.relatório);
+
+
+// Rotas da API e painel
 app.use('/auth', authRoutes);
 app.use('/categorias', categoriaRoutes); 
+app.use('/habilidades', habilidadeRoutes); 
+app.use('/alunos', alunoRoutes); 
+app.use('/receitas', receitaRoutes); 
+app.use('/aluno-habilidades', alunoHabilidadeRoutes); 
+app.use('/comentarios', commentRoutes);
 
 // Função para iniciar o sistema
 const startApp = async () => {

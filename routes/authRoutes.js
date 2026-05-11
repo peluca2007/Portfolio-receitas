@@ -1,11 +1,14 @@
 const express = require('express');
-const AuthController = require('../controllers/AuthController');
 const router = express.Router();
+const AuthController = require('../controllers/AuthController');
 
-// Rota POST para fazer login (onde o Insomnia vai bater)
+// Rota para mostrar o formulário
+router.get('/login', AuthController.showLogin);
+
+// Rota para processar o formulário
 router.post('/login', AuthController.login);
 
-// Rota GET para sair
+// Rota para sair
 router.get('/logout', AuthController.logout);
 
 module.exports = router;

@@ -2,51 +2,54 @@ const bcrypt = require('bcryptjs');
 const { Usuario } = require('../models/sql');
 
 class AuthController {
-    // Processa o formulário/requisição de login
+    // Exibe a tela de login (GET)
+    static async showLogin(req, res) {
+        res.render('auth/login', { 
+            titulo: "DARK.ONION | AUTH", 
+            layout: 'main' 
+        });
+    }
+
+    // Processa o login (POST)
     static async login(req, res) {
         const { email, senha } = req.body;
 
-        // Validação básica (Dica 4: Não tratar valores vazios)
-        if (!email || !senha) {
-            return res.status(400).json({ erro: 'Por favor, preencha e-mail e senha!' });
-        }
-
         try {
-            // Busca o usuário no banco
             const usuario = await Usuario.findOne({ where: { email } });
 
             if (!usuario) {
-                return res.status(401).json({ erro: 'E-mail ou senha incorretos!' });
+                return res.render('auth/login', { erro: true, titulo: "DARK.ONION | AUTH" });
             }
 
-            // Compara a senha digitada com o hash salvo no banco
             const senhaValida = await bcrypt.compare(senha, usuario.senha);
 
             if (!senhaValida) {
-                return res.status(401).json({ erro: 'E-mail ou senha incorretos!' });
+                return res.render('auth/login', { erro: true, titulo: "DARK.ONION | AUTH" });
             }
 
-            // Salva os dados na sessão do Express
+            // Salva na sessão (Requisito 1.1)
             req.session.usuarioId = usuario.id;
             req.session.isAdmin = usuario.isAdmin;
 
-            return res.status(200).json({ 
-                sucesso: true, 
-                mensagem: `Bem-vindo, ${usuario.nome}!`,
-                isAdmin: usuario.isAdmin
-            });
+            // Redireciona conforme o nível de acesso
+            if (usuario.isAdmin) {
+                return res.redirect('/admin/dashboard');
+            } else {
+                return res.redirect('/aluno/dashboard');
+            }
 
         } catch (error) {
             console.error(error);
-            return res.status(500).json({ erro: 'Erro interno no servidor.' });
+            res.render('auth/login', { erro: true, titulo: "DARK.ONION | AUTH" });
         }
     }
 
-    // Faz o logout (encerra a sessão)
-    static logout(req, res) {
+    // Logout (Destrói a sessão)
+    static async logout(req, res) {
         req.session.destroy();
-        return res.json({ mensagem: 'Você saiu do sistema.' });
+        res.redirect('/');
     }
 }
+
 
 module.exports = AuthController;
