@@ -23,7 +23,8 @@ module.exports = {
     Usuario,
     Receita,
     Categoria,
-    Habilidade,
+    Habilidade, 
     AlunoHabilidade,
     ReceitaAluno
 };
+

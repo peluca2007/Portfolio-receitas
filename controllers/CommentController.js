@@ -1,57 +1,69 @@
-const Comment = require('../models/nosql/Comment'); // Importa o model do Mongoose (MongoDB)
-const { Receita } = require('../models/sql');       // Importa o model do Sequelize (SQLite)
+const Comment = require('../models/nosql/Comment'); 
+const { Receita } = require('../models/sql');       
 
 class CommentController {
-    // 1. CREATE - Adiciona um comentário a uma receita
+    // 1. CREATE - Injeta o comentário aplicando regras de Cobaia Logada vs Externa
     static async adicionar(req, res) {
         const { receita_id, autor, texto } = req.body;
+        const receitaId = Number(receita_id);
+        const usuarioId = req.session.usuarioId ? Number(req.session.usuarioId) : null; // Normaliza para Number
+        const autorFinal = usuarioId ? (req.session.nome || autor) : autor;
 
-        // Validação básica (Dica 4)
-        if (!receita_id || !autor || !texto || texto.trim() === '') {
-            return res.status(400).json({ erro: 'Informe o ID da receita, o autor e o texto do comentário!' });
+        const autorLimpo = (autorFinal || '').trim();
+        const textoLimpo = (texto || '').trim();
+
+        if (!receitaId || Number.isNaN(receitaId) || !autorLimpo || !textoLimpo) {
+            return res.redirect(`/receitas/detalhes/${receita_id}?erro=Preencha todos os campos do relato`);
         }
 
         try {
-            // Integração Híbrida: Verifica no SQLite se a receita existe antes de salvar no MongoDB
-            const receitaExiste = await Receita.findByPk(receita_id);
+            // Valida a existência do prato no banco SQL
+            const receitaExiste = await Receita.findByPk(receitaId);
             if (!receitaExiste) {
-                return res.status(404).json({ erro: 'Não é possível comentar: Receita não encontrada no SQLite.' });
+                return res.status(404).send("Receita não encontrada no SQLite.");
             }
 
-            // Cria e salva o comentário no MongoDB
+            // 🚨 REGRA ESTREITA: Alunos logados só podem comentar uma vez por receita
+            if (usuarioId) {
+                const relatoAnterior = await Comment.findOne({
+                    receita_id: receitaId,
+                    usuario_id: usuarioId
+                });
+
+                if (relatoAnterior) {
+                    return res.redirect(`/receitas/detalhes/${receita_id}?erro=Operadores cadastrados só podem emitir um laudo por experimento.`);
+                }
+            }
+
+            // Injeta no NoSQL
             const novoComentario = new Comment({
-                receita_id,
-                autor,
-                texto,
+                receita_id: receitaId,
+                autor: autorLimpo,
+                texto: textoLimpo,
+                usuario_id: usuarioId, // Fica null para usuários externos (permitindo múltiplos posts)
+                is_admin: usuarioId ? !!req.session.isAdmin : false,
                 data: new Date()
             });
 
             await novoComentario.save();
 
-            return res.status(201).json({
-                sucesso: true,
-                mensagem: 'Comentário adicionado com sucesso no MongoDB!',
-                comentario: novoComentario
-            });
+            // Devolve o usuário para a página da receita atualizada
+            return res.redirect(`/receitas/detalhes/${receitaId}?sucesso=Relato arquivado no MongoDB`);
 
         } catch (error) {
             console.error(error);
-            return res.status(500).json({ erro: 'Erro interno ao salvar o comentário.' });
+            return res.redirect(`/receitas/detalhes/${receitaId}?erro=Falha interna ao contatar o cluster MongoDB`);
         }
     }
 
-    // 2. READ - Lista todos os comentários de uma receita específica
+    // 2. READ (Mantido para chamadas de API se necessário)
     static async listarPorReceita(req, res) {
         const { receita_id } = req.params;
-
         try {
-            // Busca direto no MongoDB todos os documentos com esse ID
-            const comentarios = await Comment.find({ receita_id }).sort({ data: -1 }); // -1 traz os mais recentes primeiro
-
+            const comentarios = await Comment.find({ receita_id }).sort({ data: -1 });
             return res.status(200).json(comentarios);
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({ erro: 'Erro ao buscar comentários no MongoDB.' });
+            return res.status(500).json({ erro: 'Erro ao buscar comentários.' });
         }
     }
 }

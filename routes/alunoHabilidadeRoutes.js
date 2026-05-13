@@ -1,8 +1,11 @@
 const express = require('express');
-const AlunoHabilidadeController = require('../controllers/AlunoHabilidadeController');
 const router = express.Router();
+const AlunoHabilidadeController = require('../controllers/AlunoHabilidadeController');
 
-router.post('/', AlunoHabilidadeController.vincular);        // Vincular habilidade + nível
-router.get('/:aluno_id', AlunoHabilidadeController.listarPorAluno); // Ver currículo do aluno
+// GET - Renderiza a tela visual com o formulário e a lista atual
+router.get('/editar', AlunoHabilidadeController.create);
+
+// POST - Processa o envio do formulário gravando a nota N:N
+router.post('/editar', AlunoHabilidadeController.vincular);
 
 module.exports = router;

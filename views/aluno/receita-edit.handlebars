@@ -1,0 +1,98 @@
+{{#if erro}}
+<div style="background: #e74c3c; color: #fff; padding: 0.5rem; margin-bottom: 1rem; font-family: monospace; text-align: center;">
+    [ ERRO ]: {{erro}}
+</div>
+{{/if}}
+
+<div class="card-receita" style="max-width: 650px; margin: 0 auto; border-color: #3498db;">
+    
+    <form action="/receitas/editar/{{receita.id}}" method="POST">
+        
+        <div style="margin-bottom: 1.5rem;">
+            <label style="color: #3498db; display: block; margin-bottom: 0.5rem; font-family: monospace;">NOME DA GOROROBA *</label>
+            <input type="text" name="nome" value="{{receita.nome}}" required maxlength="50"
+                style="width: 100%; background: #000; color: #fff; border: 1px solid #444; padding: 0.8rem; font-family: monospace;">
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="color: #2ecc71; display: block; margin-bottom: 0.4rem; font-family: monospace; font-weight: bold;">
+                DESCRICAO BREVE DO PRATO (Resumo curto) *
+            </label>
+            <textarea name="descricao" rows="3" required
+                style="width: 100%; background: #000; color: #fff; border: 1px solid #444; padding: 0.8rem; font-family: monospace; line-height: 1.4;">{{receita.descricao}}</textarea>
+            <span style="color: #666; font-size: 0.75rem; font-family: monospace; display: block; margin-top: 0.3rem;">
+                Resumo exibido na pagina inicial.
+            </span>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="color: #3498db; display: block; margin-bottom: 0.4rem; font-family: monospace; font-weight: bold;">
+                MODO DE PREPARO (Passo a Passo) *
+            </label>
+            <textarea name="modo_preparo" rows="6" required
+                style="width: 100%; background: #000; color: #fff; border: 1px solid #444; padding: 0.8rem; font-family: monospace; line-height: 1.5;">{{receita.modo_preparo}}</textarea>
+            <span style="color: #666; font-size: 0.75rem; font-family: monospace; display: block; margin-top: 0.3rem;">
+                Instrucoes detalhadas exibidas apenas na leitura do protocolo completo.
+            </span>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="color: #3498db; display: block; margin-bottom: 0.5rem; font-family: monospace;">URL DA IMAGEM DO EXPERIMENTO</label>
+            <input type="url" name="imagem" value="{{receita.imagem}}" placeholder="Cole o link da foto aqui..." 
+                style="width: 100%; background: #000; color: #fff; border: 1px solid #444; padding: 0.8rem; font-family: monospace;">
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="color: #3498db; display: block; margin-bottom: 0.5rem; font-family: monospace;">LINK EXTERNO</label>
+            <input type="text" name="link_externo" value="{{receita.link_externo}}" required
+                style="width: 100%; background: #000; color: #fff; border: 1px solid #444; padding: 0.8rem; font-family: monospace;">
+        </div>
+
+        <hr style="border-color: #333; margin: 2rem 0;">
+
+        <div style="margin-bottom: 2rem;">
+            <label style="color: #9b59b6; display: block; margin-bottom: 0.5rem; font-weight: bold; font-family: monospace;">[ AJUSTAR CATEGORIAS ]</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                {{#each categorias}}
+                <label style="background: #111; padding: 0.5rem; border: 1px solid #222; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" name="categorias" value="{{this.id}}" {{#if this.marcada}}checked{{/if}}>
+                    <span style="color: #fff; font-family: monospace;">{{this.nome}}</span>
+                </label>
+                {{/each}}
+            </div>
+        </div>
+
+        <div style="margin-bottom: 2rem;">
+            <label style="color: #e74c3c; display: block; margin-bottom: 0.5rem; font-weight: bold; font-family: monospace;">[ AJUSTAR COAUTORES RESPONSÁVEIS ]</label>
+            <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 1rem;">Adicione ou remova outros cozinheiros deste protocolo:</p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                {{#each alunos}}
+                <label style="background: #111; padding: 0.5rem; border: 1px solid #222; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" name="responsaveis" value="{{this.id}}" {{#if this.marcado}}checked{{/if}}>
+                    <span style="color: #fff; font-family: monospace;">{{this.nome}}</span>
+                </label>
+                {{/each}}
+            </div>
+        </div>
+
+        <button type="submit" class="btn-link" style="width: 100%; border-color: #3498db; color: #3498db; font-size: 1.1rem; margin-bottom: 1.5rem;">
+            [ SALVAR ALTERAÇÕES.SQL ]
+        </button>
+    </form>
+
+    <div style="border-top: 1px dashed #e74c3c; padding-top: 1.5rem; text-align: center;">
+        <form action="/receitas/excluir/{{receita.id}}" method="POST">
+            <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 0.8rem;">Deseja erradicar este experimento do portfólio web?</p>
+            <button type="submit" onclick="return confirm('ALERTA CRÍTICO: Esta ação destruirá a receita e seus vínculos permanentemente. Proceder?')" 
+                style="background: #e74c3c; color: #000; border: none; padding: 0.6rem 1.5rem; font-family: monospace; font-weight: bold; cursor: pointer; font-size: 0.9rem;">
+                ☠️ DESTRUIR RECEITA
+            </button>
+        </form>
+    </div>
+
+    <div style="text-align: center; margin-top: 2rem;">
+        <a href="/aluno/dashboard" style="color: #777; font-family: monospace; text-decoration: none;">&lt;&lt; Voltar para a Central</a>
+    </div>
+
+</div>

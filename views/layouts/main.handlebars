@@ -4,9 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{titulo}}</title>
+    <title>{{#if titulo}}{{titulo}}{{else}}Portfólio de Receitas{{/if}}</title>
     <link rel="stylesheet" href="/css/estilo.css">
 </head>
+
 
 <body>
     <header>
@@ -14,11 +15,28 @@
         <p>Acessando protocolos de culinária experimental via rede oculta...</p>
     </header>
 
-    <nav>
-        <a href="/">[ INÍCIO ]</a>
-        <a href="/relatorio">[ RELATÓRIO DE HABILIDADES ]</a>
-        <a href="/auth/login" class="btn-restrito">⚠️ ÁREA RESTRITA</a>
-    </nav>
+    <div class="menu-superior"
+        style="display: flex; gap: 1rem; justify-content: center; padding: 1rem; border-bottom: 1px solid #333;">
+        <a href="/" class="btn-link">[ INÍCIO ]</a>
+        <a href="/relatorio" class="btn-link">[ RELATÓRIO DE HABILIDADES ]</a>
+
+        {{#if usuarioLogado}}
+            {{#if usuarioLogado.isAdmin}}
+            <a href="/admin" class="btn-link" style="border-color: #e74c3c; color: #e74c3c;">
+                [ PAINEL CONTROLE ]
+            </a>
+            {{else}}
+            <a href="/aluno/dashboard" class="btn-link" style="border-color: #2ecc71; color: #2ecc71;">
+                [ CENTRAL DE COMANDO ]
+            </a>
+            {{/if}}
+        {{else}}
+        <a href="/auth/login" class="btn-link" style="border-color: #e74c3c; color: #e74c3c;">
+            [ ⚠️ ÁREA RESTRITA ]
+        </a>
+        {{/if}}
+
+    </div>
 
     <main>
         {{{body}}}

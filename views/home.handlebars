@@ -1,51 +1,125 @@
-<h2 class="titulo-secao">☣️ Experimentos Catalogados</h2>
+<h2 class="titulo-secao" style="text-align: center; margin-bottom: 2rem;">☣️ CATÁLOGO GERAL DE EXPERIMENTOS</h2>
 
-<div class="filtros">
-    <span style="color: #777; font-size: 0.85rem; display: block; margin-bottom: 0.5rem;">[ FILTRAR PROTOCOLOS ]</span>
-    <a href="/" class="tag-filtro" style="background: #8e44ad; color: #000;">TODAS</a>
-    {{#each categorias}}
-    <a href="/categoria/{{this.id}}" class="tag-filtro">{{this.nome}}</a>
-    {{/each}}
+<div class="filtros"
+    style="background: #111; padding: 1rem; border: 1px solid #333; margin-bottom: 2rem; text-align: center;">
+    <span style="color: #777; font-size: 0.85rem; display: block; margin-bottom: 0.8rem; font-family: monospace;">[
+        FILTRAR PROTOCOLOS POR CATEGORIA ]</span>
+    <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+        <a href="/" class="btn-link"
+            style="border-color: #8e44ad; color: #8e44ad; padding: 0.3rem 0.8rem; font-size: 0.85rem;">
+            [ TODAS ]
+        </a>
+        {{#each categorias}}
+        <a href="/categoria/{{this.id}}" class="btn-link">
+            {{this.nome}} ({{this.total_receitas}})
+        </a>
+        {{/each}}
+    </div>
 </div>
 
 {{#if receitas}}
-<div class="grid-estranho">
+<div class="grid-estranho"
+    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
     {{#each receitas}}
-    <div class="card-receita">
-        <div>
-            <h3>{{this.nome}}</h3>
-            <p class="desc">{{this.descricao}}</p>
+    <div class="card-receita"
+        style="display: flex; flex-direction: column; justify-content: space-between; padding: 0; background: #0a0a0a; border: 1px solid #222; overflow: hidden;">
 
-            <div>
-                {{#each this.Categorias}}
-                <span class="tag-cat">{{this.nome}}</span>
+        <div>
+
+
+            <div style="padding: 1.2rem;">
+                <h3
+                    style="color: #2ecc71; font-family: monospace; font-size: 1.3rem; margin-bottom: 0.5rem; word-break: break-word;">
+                    {{this.nome}}
+                </h3>
+
+                <p
+                    style="color: #aaa; font-size: 0.9rem; line-height: 1.4; margin-bottom: 1rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+                    {{this.descricao}}
+                </p>
+
+                <div style="margin-bottom: 1rem; display: flex; gap: 0.3rem; flex-wrap: wrap;">
+                    {{#each this.categorias}}
+                    <span
+                        style="background: #1a1a1a; color: #9b59b6; font-size: 0.75rem; padding: 0.2rem 0.5rem; border: 1px solid #333; font-family: monospace;">
+                        #{{this.nome}}
+                    </span>
+                    {{/each}}
+                </div>
+
+                <div style="font-size: 0.8rem; color: #666; margin-bottom: 1.2rem; font-family: monospace;">
+                    <strong style="color: #888;">Op(s):</strong>
+                    {{#each this.responsaveis}}
+                    <span style="color: #ccc;">{{this.nome}}.</span>
+                    {{/each}}
+                </div>
+
+                <a href="/receitas/detalhes/{{this.id}}" class="btn-link"
+                    style="display: block; text-align: center; border-color: #2ecc71; color: #2ecc71; padding: 0.4rem; font-size: 0.9rem;">
+                    [ LER PROTOCOLO COMPLETO ]
+                </a>
+
+                {{#if this.podeEditar}}
+                <div class="acoes-admin">
+                    <a href="/receitas/editar/{{this.id}}" class="btn-acao btn-acao--edit">
+                        [ EDITAR ]
+                    </a>
+                    <form action="/receitas/excluir/{{this.id}}" method="POST">
+                        <button type="submit" class="btn-acao btn-acao--delete"
+                            onclick="return confirm('ALERTA CRÍTICO: Esta ação destruirá a receita e seus vínculos permanentemente. Proceder?')">
+                            [ EXCLUIR ]
+                        </button>
+                    </form>
+                </div>
+                {{/if}}
+            </div>
+        </div>
+
+        <div class="area-mongo" style="background: #0f0f0f; border-top: 1px solid #222; padding: 1.2rem;">
+            <h4 style="color: #3498db; font-size: 0.9rem; margin-bottom: 0.8rem; font-family: monospace;">
+                💬 Relatos de Cobaias ({{this.comentarios.length}})
+            </h4>
+
+            {{#if this.comentarios.length}}
+            <div
+                style="max-height: 120px; overflow-y: auto; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 0.3rem;">
+                {{#each this.comentarios}}
+                <div
+                    class="comentario-item {{#if this.usuario_id}}comentario-item--logado{{/if}} {{#if this.is_admin}}comentario-item--admin{{/if}}">
+                    <strong style="color: #fff; font-family: monospace;">{{this.autor}}</strong>
+                    <p style="color: #aaa; margin-top: 0.2rem; word-break: break-word;">"{{this.texto}}"</p>
+                </div>
                 {{/each}}
             </div>
+            {{else}}
+            <p style="font-size: 0.75rem; color: #555; font-style: italic;">Nenhum efeito colateral relatado ainda.</p>
+            {{/if}}
 
-            <span class="autor">
-                <strong>Cozinheiro(s):</strong>
-                {{#each this.responsaveis}} 🔪 {{this.nome}} {{/each}}
-            </span>
+            <form action="/comentarios" method="POST"
+                style="margin: 0; display: flex; flex-direction: column; gap: 0.4rem;">
+                <input type="hidden" name="receita_id" value="{{this.id}}">
 
-            <a href="{{this.link_externo}}" target="_blank" class="btn-link">[ ACESSAR RECEITA 🔗 ]</a>
+                <input type="text" name="autor" placeholder="Seu Vulgo" required
+                    value="{{#if ../usuarioLogado}}{{../usuarioLogado.nome}}{{/if}}" {{#if
+                    ../usuarioLogado}}readonly{{/if}}
+                    style="background: #000; color: #3498db; border: 1px solid #333; padding: 0.4rem; font-size: 0.8rem; font-family: monospace;">
+
+                <input type="text" name="texto" placeholder="Relate a experiência..." required
+                    style="background: #000; color: #fff; border: 1px solid #333; padding: 0.4rem; font-size: 0.8rem; font-family: monospace;">
+
+                <button type="submit"
+                    style="background: #3498db; color: #000; border: none; padding: 0.3rem; font-weight: bold; font-family: monospace; cursor: pointer; font-size: 0.8rem;">
+                    INJETAR RELATO
+                </button>
+            </form>
         </div>
 
-        <div class="area-mongo">
-            <h4>💬 Cobaias Disseram ({{this.comentarios.length}})</h4>
-            {{#each this.comentarios}}
-            <div class="comentario-item">
-                <strong>{{this.autor}}</strong> <span style="color: #666;">({{this.data}})</span>
-                <p style="margin-top: 0.2rem; color: #aaa;">"{{this.texto}}"</p>
-            </div>
-            {{/each}}
-            {{#unless this.comentarios}}
-            <p style="font-size: 0.75rem; color: #555; font-style: italic;">Nenhum relato. Ninguém sobreviveu para
-                comentar.</p>
-            {{/unless}}
-        </div>
     </div>
     {{/each}}
 </div>
 {{else}}
-<p style="color: #e74c3c;">Nenhum experimento bizarro cadastrado ainda no banco de dados.</p>
+<div style="text-align: center; padding: 3rem; border: 1px dashed #444;">
+    <p style="color: #e74c3c; font-family: monospace; font-size: 1.1rem;">[ VAZIO ]: Nenhum experimento bizarro foi
+        persistido no banco de dados ainda.</p>
+</div>
 {{/if}}

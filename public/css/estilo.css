@@ -185,4 +185,84 @@ main {
     font-size: 0.8rem; 
 }
 
+.comentario-item--logado {
+    border-left-color: #2ecc71;
+}
+
+.comentario-item--admin {
+    border-left-color: #e74c3c;
+}
+
 .comentario-item strong { color: #ddd; }
+
+.card-receita {
+    /* Suas bordas e espaçamentos atuais... */
+    max-width: 100%;
+    
+
+    word-break: break-word; 
+    overflow-wrap: break-word;
+}
+
+/* --- Botões de Ação do ADM/Autor (Alinhamento Horizontal) --- */
+.acoes-admin {
+    margin-top: 1.2rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch; /* Garante que ambos tenham a mesma altura */
+}
+
+/* O formulário não deve ocupar linhas extras ou quebrar o flexbox */
+.acoes-admin form {
+    margin: 0;
+    display: flex;
+    flex: 1; /* Permite que o botão de excluir divida o espaço por igual */
+}
+
+.btn-acao {
+    flex: 1; /* Faz os botões terem a mesma largura no card */
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0.4rem 0.6rem;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: 4px;
+    background: #111;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Modificador Verde - Editar */
+.btn-acao--edit {
+    color: #2ecc71;
+    border: 1px solid #2ecc71;
+}
+
+.btn-acao--edit:hover {
+    background: #2ecc71;
+    color: #000;
+}
+
+/* Modificador Vermelho - Excluir */
+.btn-acao--delete {
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+}
+
+.btn-acao--delete:hover {
+    background: #e74c3c;
+    color: #000;
+}
+
+.btn-acao--detalhe-edit {
+    color: #3498db;
+    border: 1px solid #3498db;
+}
+
+.btn-acao--detalhe-edit:hover {
+    background: #3498db;
+    color: #000;
+}

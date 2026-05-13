@@ -1,82 +1,102 @@
-const { Usuario, Habilidade } = require('../models/sql');
+const { Usuario, Habilidade, AlunoHabilidade } = require('../models/sql');
 
 class AlunoHabilidadeController {
-    // 1. CREATE / UPDATE - Vincula uma habilidade a um aluno com nota de 0 a 10
-    static async vincular(req, res) {
-        const { aluno_id, habilidade_id, nivel } = req.body;
-
-        // Validação rigorosa de preenchimento (Dica 4)
-        if (!aluno_id || !habilidade_id || nivel === undefined) {
-            return res.status(400).json({ erro: 'Informe o ID do aluno, o ID da habilidade e o nível!' });
-        }
-
-        // Validação da escala obrigatória de 0 a 10 (Requisito 1.4)
-        const nivelNum = parseInt(nivel);
-        if (isNaN(nivelNum) || nivelNum < 0 || nivelNum > 10) {
-            return res.status(400).json({ erro: 'O nível de domínio deve ser um número inteiro entre 0 e 10!' });
-        }
-
+    // 1. READ / GET - Carrega o formulário e lista as habilidades atuais do aluno logado
+    static async create(req, res) {
         try {
-            // Busca o aluno (garantindo que não é o Admin)
-            const aluno = await Usuario.findOne({ where: { id: aluno_id, isAdmin: false } });
-            if (!aluno) {
-                return res.status(404).json({ erro: 'Aluno não encontrado.' });
+            const usuarioId = req.session.usuarioId;
+
+            if (!usuarioId) {
+                return res.redirect('/auth/login');
             }
 
-            // Busca a habilidade
-            const habilidade = await Habilidade.findByPk(habilidade_id);
-            if (!habilidade) {
-                return res.status(404).json({ erro: 'Habilidade não encontrada.' });
-            }
+            // Busca todas as habilidades cadastradas no sistema para o <select>
+            const habilidadesData = await Habilidade.findAll({ order: [['nome', 'ASC']] });
+            const habilidades = habilidadesData.map(h => h.get({ plain: true }));
 
-            // Mágica do N:N com atributo extra -> Salva o vínculo passando o 'nivel'
-            if (aluno.addHabilidade) {
-                await aluno.addHabilidade(habilidade, { through: { nivel: nivelNum } });
-            } else if (aluno.addHabilidades) {
-                await aluno.addHabilidades(habilidade, { through: { nivel: nivelNum } });
-            }
-
-            return res.status(201).json({
-                sucesso: true,
-                mensagem: `Habilidade vinculada com sucesso ao aluno ${aluno.nome}!`,
-                vinculo: {
-                    aluno: aluno.nome,
-                    habilidade: habilidade.nome,
-                    nivel: nivelNum
-                }
-            });
-
-        } catch (error) {
-            console.error(error);
-            return res.status(500).json({ erro: 'Erro interno ao vincular a habilidade.' });
-        }
-    }
-
-    // 2. READ - Lista todas as habilidades e níveis de um aluno específico
-    static async listarPorAluno(req, res) {
-        const { aluno_id } = req.params;
-
-        try {
-            const aluno = await Usuario.findOne({
-                where: { id: aluno_id, isAdmin: false },
-                include: [{
-                    model: Habilidade,
-                    through: { attributes: ['nivel'] } // Puxa especificamente o nível gravado no N:N
+            // Busca o aluno logado e faz o include das habilidades que ele JÁ possui (N:N)
+            const aluno = await Usuario.findByPk(usuarioId, {
+                include: [{ 
+                    model: Habilidade, 
+                    as: 'habilidades', // Utiliza o alias mapeado no seu index.js
+                    through: { attributes: ['nivel'] } 
                 }]
             });
 
-            if (!aluno) {
-                return res.status(404).json({ erro: 'Aluno não encontrado.' });
-            }
+            // Mapeia as habilidades já cadastradas para exibir as notas na tela
+            const minhasHabilidades = aluno && aluno.habilidades ? aluno.habilidades.map(h => ({
+                nome: h.nome,
+                nivel: h.AlunoHabilidade.nivel
+            })) : [];
 
-            return res.status(200).json({
-                aluno: aluno.nome,
-                habilidades: aluno.Habilidades || aluno.habilidades || []
+            const { erro, sucesso } = req.query;
+
+            return res.render('aluno/habilidade-form', {
+                titulo: "Ajustar Nível de Domínio | Dark.onion",
+                habilidades,
+                minhasHabilidades,
+                erro,
+                sucesso
             });
 
         } catch (error) {
             console.error(error);
-            return res.status(500).json({ erro: 'Erro ao listar habilidades do aluno.' });
+            return res.status(500).send("Erro ao carregar o painel de habilidades.");
+        }
+    }
+
+    // 2. CREATE / UPDATE / POST - Grava ou atualiza o nível (0 a 10) na tabela N:N
+    static async vincular(req, res) {
+        const { habilidade_id, nivel } = req.body;
+        const usuarioId = req.session.usuarioId; // Puxa o ID de forma segura pela sessão
+
+        // Validação rigorosa (Dica 4: Não tratar valores nulos ou vazios)
+        if (!habilidade_id || nivel === '' || nivel === undefined) {
+            return res.redirect('/aluno-habilidades/editar?erro=CamposObrigatorios');
+        }
+
+        const nivelNum = parseInt(nivel, 10);
+
+        // Validação da escala obrigatória de 0 a 10 (Requisito 1.4)
+        if (isNaN(nivelNum) || nivelNum < 0 || nivelNum > 10) {
+            return res.redirect('/aluno-habilidades/editar?erro=NivelInvalido');
+        }
+
+        try {
+            // Busca o aluno logado
+            const aluno = await Usuario.findOne({ where: { id: usuarioId, isAdmin: false } });
+            if (!aluno) {
+                return res.redirect('/auth/login');
+            }
+
+            // Busca a habilidade selecionada
+            const habilidade = await Habilidade.findByPk(habilidade_id);
+            if (!habilidade) {
+                return res.redirect('/aluno-habilidades/editar?erro=HabilidadeNaoEncontrada');
+            }
+
+            // Mágica do N:N com atributo extra (mantendo sua lógica original)
+            // Os métodos gerados pelo Sequelize respeitam o alias 'habilidades'
+            if (aluno.addHabilidade) {
+                await aluno.addHabilidade(habilidade, { through: { nivel: nivelNum } });
+            } else {
+                // Alternativa direta via Model intermediário caso o mixin falhe
+                const [vinculo, created] = await AlunoHabilidade.findOrCreate({
+                    where: { usuario_id: usuarioId, habilidade_id: habilidade_id },
+                    defaults: { nivel: nivelNum }
+                });
+                if (!created) {
+                    vinculo.nivel = nivelNum;
+                    await vinculo.save();
+                }
+            }
+
+            // Sucesso: redireciona de volta para a View atualizada
+            return res.redirect('/aluno-habilidades/editar?sucesso=NivelAtualizado');
+
+        } catch (error) {
+            console.error(error);
+            return res.redirect('/aluno-habilidades/editar?erro=ErroInterno');
         }
     }
 }

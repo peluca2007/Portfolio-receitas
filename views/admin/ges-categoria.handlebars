@@ -1,0 +1,32 @@
+<!-- views/admin/ges-categoria.handlebars -->
+<h2 class="titulo-secao">Gestao de Categorias</h2>
+
+{{#if erro}}<p style="color:#e74c3c;">{{erro}}</p>{{/if}}
+{{#if sucesso}}<p style="color:#2ecc71;">{{sucesso}}</p>{{/if}}
+
+<form action="/categorias/cadastrar" method="POST" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem;">
+    <input type="text" name="nome" placeholder="Nome da categoria" required
+        style="background: #000; color: #fff; border: 1px solid #444; padding: 0.6rem; font-family: monospace; flex: 1; min-width: 220px;">
+    <button type="submit" class="btn-link" style="border-color: #9b59b6; color: #9b59b6; margin-top: 0; padding: 0.4rem 0.9rem;">
+        CADASTRAR
+    </button>
+</form>
+
+{{#if categorias}}
+    {{#each categorias}}
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.6rem;">
+        <form action="/categorias/editar/{{this.id}}" method="POST" style="display: flex; gap: 0.5rem; align-items: center; margin: 0;">
+            <input type="text" name="nome" value="{{this.nome}}" required
+                style="background: #000; color: #fff; border: 1px solid #444; padding: 0.5rem; font-family: monospace; min-width: 220px;">
+            <button type="submit" class="btn-link" style="border-color: #2ecc71; color: #2ecc71; margin-top: 0; padding: 0.35rem 0.8rem;">
+                SALVAR
+            </button>
+        </form>
+        <form action="/categorias/excluir/{{this.id}}" method="POST" style="margin: 0;">
+            <button type="submit" class="btn-link" style="border-color: #e74c3c; color: #e74c3c; margin-top: 0; padding: 0.35rem 0.8rem;">
+                EXCLUIR
+            </button>
+        </form>
+    </div>
+    {{/each}}
+{{/if}}

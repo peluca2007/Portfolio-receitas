@@ -1,0 +1,105 @@
+<h2 class="titulo-secao" style="text-align: center; margin-bottom: 2rem;">PROTOCOLO COMPLETO</h2>
+
+<div class="card-receita" style="max-width: 900px; margin: 0 auto; padding: 0; overflow: hidden;">
+    <div>
+        <img src="{{receita.imagem}}" alt="{{receita.nome}}"
+            style="width: 100%; height: 320px; object-fit: cover; border-bottom: 1px solid #333;">
+
+        <div style="padding: 1.5rem;">
+            <h3
+                style="color: #2ecc71; font-family: monospace; font-size: 1.6rem; margin-bottom: 0.7rem; word-break: break-word;">
+                {{receita.nome}}
+            </h3>
+
+            <p style="color: #aaa; font-size: 1rem; line-height: 1.6; margin-bottom: 1.2rem;">
+                {{receita.descricao}}
+            </p>
+
+            <div style="margin-bottom: 1.2rem; background: #111; border: 1px solid #222; padding: 1rem;">
+                <h4 style="color: #3498db; font-family: monospace; margin-bottom: 0.6rem;">MODO DE PREPARO</h4>
+                <p style="color: #ddd; font-size: 0.95rem; line-height: 1.6; white-space: pre-line; margin: 0;">
+                    {{receita.modo_preparo}}
+                </p>
+            </div>
+
+            <div style="margin-bottom: 1rem; display: flex; gap: 0.3rem; flex-wrap: wrap;">
+                {{#each receita.categorias}}
+                <span
+                    style="background: #1a1a1a; color: #9b59b6; font-size: 0.75rem; padding: 0.2rem 0.5rem; border: 1px solid #333; font-family: monospace;">
+                    #{{this.nome}}
+                </span>
+                {{/each}}
+            </div>
+
+            <div style="font-size: 0.85rem; color: #666; margin-bottom: 1rem; font-family: monospace;">
+                <strong style="color: #888;">Op(s):</strong>
+                {{#each receita.responsaveis}}
+                <span style="color: #ccc;">{{this.nome}}.</span>
+                {{/each}}
+            </div>
+
+            {{#if receita.link_externo}}
+            <a href="{{receita.link_externo}}" class="btn-link"
+                style="display: inline-block; border-color: #2ecc71; color: #2ecc71;">
+                [ ABRIR LINK EXTERNO ]
+            </a>
+            {{/if}}
+
+            {{#if podeEditar}}
+            <div class="acoes-admin">
+                <a href="/receitas/editar/{{receita.id}}" class="btn-acao btn-acao--detalhe-edit">
+                    [ EDITAR ]
+                </a>
+                <form action="/receitas/excluir/{{receita.id}}" method="POST">
+                    <button type="submit" class="btn-acao btn-acao--delete"
+                        onclick="return confirm('ALERTA CRÍTICO: Esta ação destruirá a receita e seus vínculos permanentemente. Proceder?')">
+                        [ EXCLUIR ]
+                    </button>
+                </form>
+            </div>
+            {{/if}}
+        </div>
+    </div>
+
+    <div class="area-mongo" style="background: #0f0f0f; border-top: 1px solid #222; padding: 1.5rem;">
+        <h4 style="color: #3498db; font-size: 0.9rem; margin-bottom: 0.8rem; font-family: monospace;">
+            Relatos ({{receita.comentarios.length}})
+        </h4>
+
+        {{#if receita.comentarios.length}}
+        <div
+            style="max-height: 180px; overflow-y: auto; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 0.3rem;">
+            {{#each receita.comentarios}}
+            <div
+                class="comentario-item {{#if this.usuario_id}}comentario-item--logado{{/if}} {{#if this.is_admin}}comentario-item--admin{{/if}}">
+                <strong style="color: #fff; font-family: monospace;">{{this.autor}}</strong>
+                <p style="color: #aaa; margin-top: 0.2rem; word-break: break-word;">"{{this.texto}}"</p>
+            </div>
+            {{/each}}
+        </div>
+        {{else}}
+        <p style="font-size: 0.75rem; color: #555; font-style: italic;">Nenhum relato ainda.</p>
+        {{/if}}
+
+        <form action="/comentarios" method="POST"
+            style="margin: 0; display: flex; flex-direction: column; gap: 0.4rem;">
+            <input type="hidden" name="receita_id" value="{{receita.id}}">
+
+            <input type="text" name="autor" placeholder="Seu Vulgo" required
+                value="{{#if usuarioLogado}}{{usuarioLogado.nome}}{{/if}}" {{#if usuarioLogado}}readonly{{/if}}
+                style="background: #000; color: #3498db; border: 1px solid #333; padding: 0.4rem; font-size: 0.8rem; font-family: monospace;">
+
+            <input type="text" name="texto" placeholder="Relate a experiencia..." required
+                style="background: #000; color: #fff; border: 1px solid #333; padding: 0.4rem; font-size: 0.8rem; font-family: monospace;">
+
+            <button type="submit"
+                style="background: #3498db; color: #000; border: none; padding: 0.3rem; font-weight: bold; font-family: monospace; cursor: pointer; font-size: 0.8rem;">
+                INJETAR RELATO
+            </button>
+        </form>
+    </div>
+</div>
+
+<div style="text-align: center; margin-top: 1.5rem;">
+    <a href="/" class="btn-link" style="border-color: #777; color: #777;">[ VOLTAR AO CATALOGO ]</a>
+</div>

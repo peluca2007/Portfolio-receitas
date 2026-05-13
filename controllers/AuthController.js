@@ -17,24 +17,29 @@ class AuthController {
         try {
             const usuario = await Usuario.findOne({ where: { email } });
 
+            // Verifica se o usuário existe no banco
             if (!usuario) {
                 return res.render('auth/login', { erro: true, titulo: "DARK.ONION | AUTH" });
             }
 
+            // Compara a senha digitada com o hash salvo (Bcrypt)
             const senhaValida = await bcrypt.compare(senha, usuario.senha);
 
             if (!senhaValida) {
                 return res.render('auth/login', { erro: true, titulo: "DARK.ONION | AUTH" });
             }
 
-            // Salva na sessão (Requisito 1.1)
+            // Registra as informações na sessão do Express
             req.session.usuarioId = usuario.id;
             req.session.isAdmin = usuario.isAdmin;
+            req.session.nome = usuario.nome;
 
-            // Redireciona conforme o nível de acesso
+            // Redirecionamento lógico por cargo
             if (usuario.isAdmin) {
-                return res.redirect('/admin/dashboard');
+                // Administradores são enviados para a gestão de alunos
+                return res.redirect('/admin'); 
             } else {
+                // Alunos comuns são enviados para seu painel pessoal
                 return res.redirect('/aluno/dashboard');
             }
 
@@ -44,12 +49,12 @@ class AuthController {
         }
     }
 
-    // Logout (Destrói a sessão)
+    // Encerra a sessão (Logout)
     static async logout(req, res) {
-        req.session.destroy();
-        res.redirect('/');
+        req.session.destroy(() => {
+            res.redirect('/');
+        });
     }
 }
-
 
 module.exports = AuthController;

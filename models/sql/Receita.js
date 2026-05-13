@@ -17,6 +17,15 @@ const Receita = sequelize.define('Receita', {
         allowNull: false,
         validate: { notEmpty: true }
     },
+    modo_preparo: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        validate: { notEmpty: true }
+    },
+    imagem: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
     link_externo: {
         type: DataTypes.STRING,
         allowNull: false,

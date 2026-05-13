@@ -1,139 +1,267 @@
 const { Receita, Categoria, Usuario } = require('../models/sql');
+const Comment = require('../models/nosql/Comment');
 
 class ReceitaController {
-    // 1. CREATE - Cadastra a receita e vincula Categorias e Alunos (N:N)
+    // 1. GET - Renderiza formulário de criação
     static async create(req, res) {
-        const { nome, descricao, link_externo, categorias, alunos } = req.body;
-
-        // Validação (Dica 4: Não tratar valores vazios)
-        if (!nome || !descricao || !link_externo) {
-            return res.status(400).json({ erro: 'Nome, descrição e link externo são obrigatórios!' });
-        }
-
-        // Exige pelo menos uma categoria e um aluno responsável
-        if (!categorias || !Array.isArray(categorias) || categorias.length === 0) {
-            return res.status(400).json({ erro: 'A receita precisa estar vinculada a pelo menos uma categoria!' });
-        }
-
-        if (!alunos || !Array.isArray(alunos) || alunos.length === 0) {
-            return res.status(400).json({ erro: 'A receita precisa ter pelo menos um aluno responsável!' });
+        if (!req.session.usuarioId) {
+            return res.redirect('/auth/login?erro=LoginNecessario');
         }
 
         try {
-            // 1. Cria a receita na tabela principal
-            const novaReceita = await Receita.create({
-                nome,
-                descricao,
-                link_externo
+            const categoriasData = await Categoria.findAll();
+            const alunosData = await Usuario.findAll({ where: { isAdmin: false } });
+
+            const categorias = categoriasData.map(c => c.get({ plain: true }));
+            const usuarioLogadoId = req.session.usuarioId ? Number(req.session.usuarioId) : null;
+
+            // Oculta o usuário logado da lista para evitar marcação redundante no select
+            const alunos = alunosData
+                .map(a => a.get({ plain: true }))
+                .filter(aluno => (usuarioLogadoId ? Number(aluno.id) !== usuarioLogadoId : true));
+
+            return res.render('aluno/receita-form', {
+                titulo: 'Novo Experimento | Dark.onion',
+                categorias,
+                alunos,
+                erro: req.query.erro
             });
-
-            // 2. Busca as instâncias reais no banco para garantir que existem
-            const catEncontradas = await Categoria.findAll({ where: { id: categorias } });
-            const alunosEncontrados = await Usuario.findAll({ where: { id: alunos, isAdmin: false } });
-
-            if (catEncontradas.length === 0 || alunosEncontrados.length === 0) {
-                return res.status(404).json({ erro: 'Alguma categoria ou aluno enviado não existe no banco!' });
-            }
-
-            // 3. Mágica do N:N -> Preenche as tabelas associativas
-            // O Sequelize injeta esses métodos baseados nos seus models
-            await novaReceita.addCategorias(catEncontradas);
-
-            // Dependendo de como nomeamos a associação no index.js, o método pode ser addUsuarios ou addAlunos
-            if (novaReceita.addUsuarios) {
-                await novaReceita.addUsuarios(alunosEncontrados);
-            } else if (novaReceita.addAlunos) {
-                await novaReceita.addAlunos(alunosEncontrados);
-            }
-
-            return res.status(201).json({
-                sucesso: true,
-                mensagem: 'Receita criada e vinculada com sucesso!',
-                receita: novaReceita
-            });
-
         } catch (error) {
             console.error(error);
-            return res.status(500).json({ erro: 'Erro interno ao cadastrar a receita.' });
+            return res.redirect('/?erro=ErroAoCarregarFormulario');
         }
     }
 
-    // 2. READ - Lista todas as receitas puxando junto os dados das categorias e autores
-    static async list(req, res) {
+    // 2. POST - Persiste a receita garantindo validação de nulos
+    static async store(req, res) {
+        if (!req.session.usuarioId) {
+            return res.redirect('/auth/login?erro=LoginNecessario');
+        }
+
+        const { nome, descricao, modo_preparo, link_externo, categorias, responsaveis, imagem } = req.body;
+        const usuarioLogadoId = req.session.usuarioId ? Number(req.session.usuarioId) : null;
+
+        if (!nome || !descricao || !modo_preparo || !link_externo || nome.trim() === '' || descricao.trim() === '' || modo_preparo.trim() === '' || link_externo.trim() === '') {
+            return res.redirect('/receitas/nova?erro=Preencha todos os campos obrigatorios (Nome, Descricao, Modo de Preparo e Link Externo)');
+        }
+
         try {
-            const receitas = await Receita.findAll({
+            const imagemFinal = imagem && imagem.trim() !== ''
+                ? imagem.trim()
+                : 'https://placehold.co/1200x800?text=Receita';
+
+            const novaReceita = await Receita.create({
+                nome: nome.trim(),
+                descricao: descricao.trim(),
+                modo_preparo: modo_preparo.trim(),
+                link_externo: link_externo.trim(),
+                imagem: imagemFinal
+            });
+
+            const catIds = categorias ? (Array.isArray(categorias) ? categorias : [categorias]) : [];
+            await novaReceita.setCategorias(catIds);
+
+            let respIds = usuarioLogadoId ? [usuarioLogadoId] : [];
+            if (responsaveis) {
+                const coautorIds = Array.isArray(responsaveis) ? responsaveis : [responsaveis];
+                respIds = [...new Set([...respIds, ...coautorIds.map(Number)])];
+            }
+            if (respIds.length > 0) {
+                await novaReceita.setResponsaveis(respIds);
+            }
+
+            return res.redirect('/?sucesso=Experimento registrado com sucesso no portfolio');
+        } catch (error) {
+            console.error(error);
+            return res.redirect('/receitas/nova?erro=Falha interna ao gravar no banco SQLite');
+        }
+    }
+
+    // 3. GET - Formulário de Edição
+    static async edit(req, res) {
+        const { id } = req.params;
+        const usuarioLogadoId = req.session.usuarioId ? Number(req.session.usuarioId) : null;
+        const isAdmin = !!req.session.isAdmin;
+
+        if (!req.session.usuarioId) {
+            return res.redirect('/auth/login?erro=LoginNecessario');
+        }
+
+        try {
+            const receitaData = await Receita.findByPk(id, {
                 include: [
-                    { 
-                        model: Categoria, 
-                        through: { attributes: [] } // Ignora os campos da tabela intermediária no JSON visual
-                    },
-                    { 
-                        model: Usuario, 
-                        attributes: ['id', 'nome', 'email'], // Traz os autores sem a senha
-                        through: { attributes: [] } 
-                    }
+                    { model: Categoria, as: 'categorias' },
+                    { model: Usuario, as: 'responsaveis' }
                 ]
             });
-            return res.status(200).json(receitas);
+
+            if (!receitaData) return res.redirect('/');
+            const receita = receitaData.get({ plain: true });
+
+            const ehResponsavel = receita.responsaveis.some(r => Number(r.id) === usuarioLogadoId);
+            if (!ehResponsavel && !isAdmin) {
+                return res.redirect('/?erro=Acesso negado. Apenas coautores ou a administracao possuem permissao.');
+            }
+
+            const categoriasData = await Categoria.findAll();
+            const alunosData = await Usuario.findAll({ where: { isAdmin: false } });
+
+            const categorias = categoriasData.map(c => {
+                const cat = c.get({ plain: true });
+                cat.marcada = receita.categorias.some(rc => rc.id === cat.id);
+                return cat;
+            });
+
+            const alunos = alunosData
+                .map(a => {
+                    const al = a.get({ plain: true });
+                    al.marcado = receita.responsaveis.some(rr => rr.id === al.id);
+                    return al;
+                })
+                .filter(aluno => (usuarioLogadoId ? Number(aluno.id) !== usuarioLogadoId : true));
+
+            return res.render('aluno/receita-edit', {
+                titulo: `Editar: ${receita.nome}`,
+                receita,
+                categorias,
+                alunos,
+                erro: req.query.erro
+            });
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({ erro: 'Erro ao listar as receitas.' });
+            return res.redirect('/');
         }
     }
 
-    // 3. UPDATE - Edita os dados e atualiza os vínculos N:N
+    // 4. POST - Processa alterações mantendo integridade
     static async update(req, res) {
-        const { id } = req.params;
-        const { nome, descricao, link_externo, categorias, alunos } = req.body;
+        if (!req.session.usuarioId) {
+            return res.redirect('/auth/login?erro=LoginNecessario');
+        }
 
-        if (!nome || !descricao || !link_externo) {
-            return res.status(400).json({ erro: 'Nome, descrição e link externo são obrigatórios!' });
+        const { id } = req.params;
+        const { nome, descricao, modo_preparo, link_externo, categorias, responsaveis, imagem } = req.body;
+        const usuarioLogadoId = req.session.usuarioId ? Number(req.session.usuarioId) : null;
+        const isAdmin = !!req.session.isAdmin;
+
+        if (!nome || !descricao || !modo_preparo || !link_externo || nome.trim() === '' || descricao.trim() === '' || modo_preparo.trim() === '' || link_externo.trim() === '') {
+            return res.redirect(`/receitas/editar/${id}?erro=Campos obrigatorios nao podem ficar vazios`);
         }
 
         try {
-            const receita = await Receita.findByPk(id);
-            if (!receita) {
-                return res.status(404).json({ erro: 'Receita não encontrada.' });
+            const receita = await Receita.findByPk(id, { include: [{ model: Usuario, as: 'responsaveis' }] });
+            if (!receita) return res.redirect('/');
+
+            const ehResponsavel = receita.responsaveis.some(r => Number(r.id) === usuarioLogadoId);
+            if (!ehResponsavel && !isAdmin) return res.redirect('/?erro=Permissao negada');
+
+            const imgFinal = imagem && imagem.trim() !== '' ? imagem.trim() : receita.imagem;
+
+            await receita.update({
+                nome: nome.trim(),
+                descricao: descricao.trim(),
+                modo_preparo: modo_preparo.trim(),
+                link_externo: link_externo.trim(),
+                imagem: imgFinal
+            });
+
+            const catIds = categorias ? (Array.isArray(categorias) ? categorias : [categorias]) : [];
+            await receita.setCategorias(catIds);
+
+            if (!isAdmin) {
+                let respIds = usuarioLogadoId ? [usuarioLogadoId] : [];
+                if (responsaveis) {
+                    const coautorIds = Array.isArray(responsaveis) ? responsaveis : [responsaveis];
+                    respIds = [...new Set([...respIds, ...coautorIds.map(Number)])];
+                }
+                await receita.setResponsaveis(respIds);
+            } else if (responsaveis) {
+                const respIds = Array.isArray(responsaveis) ? responsaveis : [responsaveis];
+                await receita.setResponsaveis(respIds.map(Number));
             }
 
-            // Atualiza os textos
-            receita.nome = nome;
-            receita.descricao = descricao;
-            receita.link_externo = link_externo;
-            await receita.save();
-
-            // Se mandou novas listas, substitui os relacionamentos antigos (método set)
-            if (categorias && Array.isArray(categorias)) {
-                const cats = await Categoria.findAll({ where: { id: categorias } });
-                await receita.setCategorias(cats);
-            }
-
-            if (alunos && Array.isArray(alunos)) {
-                const alns = await Usuario.findAll({ where: { id: alunos, isAdmin: false } });
-                if (receita.setUsuarios) await receita.setUsuarios(alns);
-                else if (receita.setAlunos) await receita.setAlunos(alns);
-            }
-
-            return res.status(200).json({ mensagem: 'Receita atualizada com sucesso!', receita });
+            return res.redirect(`/receitas/detalhes/${id}?sucesso=Protocolo atualizado com sucesso`);
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({ erro: 'Erro ao atualizar a receita.' });
+            return res.redirect(`/receitas/editar/${id}?erro=Erro ao atualizar os dados no banco`);
         }
     }
 
-    // 4. DELETE - Exclui a receita (o banco limpa o N:N sozinho em cascata)
+    // 5. POST - Destruição relacional e remoção de comentários órfãos
     static async delete(req, res) {
-        const { id } = req.params;
+        if (!req.session.usuarioId) {
+            return res.redirect('/auth/login?erro=LoginNecessario');
+        }
+
+        const usuarioLogadoId = req.session.usuarioId ? Number(req.session.usuarioId) : null;
+        const isAdmin = !!req.session.isAdmin;
 
         try {
-            const deletados = await Receita.destroy({ where: { id } });
-            if (deletados === 0) {
-                return res.status(404).json({ erro: 'Receita não encontrada.' });
+            const receita = await Receita.findByPk(req.params.id, { include: [{ model: Usuario, as: 'responsaveis' }] });
+            if (!receita) return res.redirect('/');
+
+            const ehResponsavel = receita.responsaveis.some(r => Number(r.id) === usuarioLogadoId);
+
+            if (!ehResponsavel && !isAdmin) {
+                return res.redirect('/?erro=Permissao negada');
             }
-            return res.status(200).json({ mensagem: 'Receita excluída com sucesso!' });
+
+            await Comment.deleteMany({ receita_id: Number(req.params.id) });
+            await receita.destroy();
+
+            return res.redirect('/?sucesso=Receita e relatos excluidos permanentemente');
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({ erro: 'Erro ao excluir a receita.' });
+            return res.redirect('/');
+        }
+    }
+
+    // 6. GET - Exibição em tela cheia
+    static async show(req, res) {
+        try {
+            const receitaData = await Receita.findByPk(req.params.id, {
+                include: [
+                    { model: Categoria, as: 'categorias' },
+                    { model: Usuario, as: 'responsaveis' }
+                ]
+            });
+
+            if (!receitaData) return res.redirect('/');
+            const receita = receitaData.get({ plain: true });
+
+            const usuarioLogadoId = req.session.usuarioId ? Number(req.session.usuarioId) : null;
+            const isAdmin = !!req.session.isAdmin;
+            const ehResponsavel = Array.isArray(receita.responsaveis)
+                ? receita.responsaveis.some(r => Number(r.id) === usuarioLogadoId)
+                : false;
+            const podeEditar = isAdmin || ehResponsavel;
+
+            const mongoOk = Comment.db && Comment.db.readyState === 1;
+            const comentarios = mongoOk
+                ? await Comment.find({ receita_id: receita.id }).sort({ data: -1 })
+                : [];
+            receita.comentarios = comentarios.map(c => ({
+                autor: c.autor,
+                texto: c.texto,
+                data: c.data,
+                dataFormatada: c.data ? c.data.toLocaleString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) : '',
+                usuario_id: c.usuario_id,
+                is_admin: c.is_admin,
+                isAluno: c.usuario_id !== null && c.usuario_id !== undefined
+            }));
+
+            return res.render('aluno/receita-detalhes', {
+                titulo: receita.nome,
+                receita,
+                podeEditar,
+                erro: req.query.erro,
+                sucesso: req.query.sucesso
+            });
+        } catch (error) {
+            return res.redirect('/');
         }
     }
 }

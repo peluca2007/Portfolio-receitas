@@ -1,0 +1,68 @@
+<h2 class="titulo-secao">📊 PROTOCOLO DE PROFICIÊNCIA (0 - 10)</h2>
+
+{{#if erro}}
+<div style="background: #e74c3c; color: #fff; padding: 0.5rem; margin-bottom: 1rem; font-family: monospace;">
+    [ ERRO ]: Verifique os dados. O nível deve ser estritamente entre 0 e 10.
+</div>
+{{/if}}
+
+{{#if sucesso}}
+<div style="background: #2ecc71; color: #000; padding: 0.5rem; margin-bottom: 1rem; font-family: monospace; font-weight: bold;">
+    [ SUCESSO ]: Nível de domínio gravado na tabela associativa!
+</div>
+{{/if}}
+
+<div class="grid-estranho" style="grid-template-columns: 1fr 1fr; align-items: start;">
+    
+    <div class="card-receita">
+        <h3 style="color: #2ecc71; margin-bottom: 1rem;">⚙️ Definir Nível</h3>
+        
+        <form action="/aluno-habilidades/editar" method="POST">
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: #aaa; display: block; margin-bottom: 0.5rem;">SELECIONE A HABILIDADE *</label>
+                <select name="habilidade_id" required style="width: 100%; background: #000; color: #2ecc71; border: 1px solid #444; padding: 0.8rem; font-family: monospace;">
+                    <option value="">-- Escolha uma habilidade --</option>
+                    {{#each habilidades}}
+                    <option value="{{this.id}}">{{this.nome}}</option>
+                    {{/each}}
+                </select>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="color: #aaa; display: block; margin-bottom: 0.5rem;">NÍVEL DE DOMÍNIO (0 a 10) *</label>
+                <input type="number" name="nivel" min="0" max="10" required placeholder="Ex: 7"
+                    style="width: 100%; background: #000; color: #fff; border: 1px solid #444; padding: 0.8rem; font-family: monospace; font-size: 1.2rem;">
+                <span style="font-size: 0.75rem; color: #666; display: block; margin-top: 0.3rem;">0 = Desastre nuclear | 10 = Mestre Tor</span>
+            </div>
+
+            <button type="submit" class="btn-link" style="width: 100%; border-color: #2ecc71; color: #2ecc71;">
+                [ GRAVAR PROFICIÊNCIA ]
+            </button>
+        </form>
+    </div>
+
+    <div class="card-receita" style="border-color: #9b59b6;">
+        <h3 style="color: #9b59b6; margin-bottom: 1rem;">📈 Minhas Métricas</h3>
+        
+        {{#if minhasHabilidades}}
+            <ul style="list-style: none; padding: 0;">
+                {{#each minhasHabilidades}}
+                <li style="display: flex; justify-content: space-between; align-items: center; background: #111; padding: 0.8rem; border-bottom: 1px solid #222; font-family: monospace;">
+                    <span style="color: #fff;">{{this.nome}}</span>
+                    <span style="background: #2ecc71; color: #000; padding: 0.2rem 0.6rem; font-weight: bold; border-radius: 3px;">
+                        Lvl. {{this.nivel}}
+                    </span>
+                </li>
+                {{/each}}
+            </ul>
+        {{else}}
+            <p style="color: #777; font-size: 0.9rem; font-style: italic;">Nenhuma habilidade catalogada na sua credencial ainda.</p>
+        {{/if}}
+
+        <a href="/aluno/dashboard" class="btn-link" style="display: block; text-align: center; margin-top: 2rem; border-color: #777; color: #777;">
+            [ VOLTAR AO PAINEL ]
+        </a>
+    </div>
+
+</div>
